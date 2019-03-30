@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+#  Copyright 2019 Fivox
+#
+#  Licensed under the WTFPL, Version 2
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE 
+# TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION 
+# 0. You just DO WHAT THE FUCK YOU WANT TO.
+
+import binascii
+import os.path
+import subprocess
+import sys
+
+# Check if there is an input file
+if(len(sys.argv) < 2):
+    print('The input file is missing. You\'re not awesome enough to use this software.')
+    exit(0)
+
+# Check if input file exists
+if(not os.path.isfile(sys.argv[1])):
+    print(sys.argv[1] + ' does not exists. You\'re not awesome enough.')
+    exit(0)
+
+# Check if output file exists
+if(os.path.isfile(sys.argv[1] + '.πz')):
+    print(sys.argv[1] + '.πz already exists. Do you want to overwrite it (it will be awesome)? [y/N]')
+    answer = sys.stdin.readline()
+    if(answer != 'y\n' and answer != 'Y\n'):
+        print('You\'re not as awesome as you look.')
+        exit(0)
+
+# Check π size. It must be at least 2330 to cover all possible bytes
+πsize = 2330
+if(len(sys.argv) >= 3):
+    if(int(sys.argv[2]) > 2330):
+        πsize = int(sys.argv[2])
+
+# Calculate the size needed to store the compression informations
+output_byte_size = 1
+i = 1
+while(i < πsize):
+    output_byte_size = output_byte_size + 1
+    i = i * 256
+
+# Calculate π. I'm not very awesome, so I use bc
+π_str = subprocess.check_output('echo "obase=16;scale=' + str(πsize*2) + '; 4*a(1)" | bc -l | sed -e "s/^..//" | tr -d "\n" | tr -d "\\\\\\\\"', shell=True, executable='/bin/bash')
+
+π = []   # Binary value of π
+buf = [] # Part of the input file being read
+
+# Calculate binary value of π
+for i in range(0, len(π_str) - 1, 2):
+    π1 = π_str[i]
+    π1 = π1 - 48
+    if(π1 > 9):
+        π1 = π1 - 7
+
+    π2 = π_str[i + 1]
+    π2 = π2 - 48
+    if(π2 > 9):
+        π2 = π2 - 7
+
+    π.append((π2 + (16 * π1)).to_bytes(1, byteorder='big'));
+
+# Create πzip file and write headers
+input_file = open(sys.argv[1], 'rb')
+output_file = open(sys.argv[1] + '.πz', 'wb')
+output_file.write(bytes('πz', 'UTF-8'))
+output_file.write((πsize).to_bytes(4, byteorder='big', signed=False))
+
+while True:
+    output_position = 0
+    output_size = 0
+
+    # Fills the buffer with the input_file datas
+    while len(buf) < len(π):
+        buf.append(input_file.read(1))
+
+    # For each bytes in π
+    for i in range(0, len(π)-1):
+        j = 0
+        # For each bytes in buf that corresponds to π
+        while i + j < len(π) and buf[j] == π[i + j]:
+            j = j + 1
+            # If it's the biggest match found
+            if(j > output_size):
+                output_position = i
+                output_size = j
+
+    for i in range(0, output_size):
+        del(buf[0])
+
+    output_file.write((output_position).to_bytes(output_byte_size, byteorder='big', signed=False))
+    output_file.write((output_size).to_bytes(output_byte_size, byteorder='big', signed=False))
+
+    if(buf[0] == b''):
+        break
+ 
+input_file.close()
+output_file.close()
+
+os.remove(sys.argv[1])
+
+exit(0)

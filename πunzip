@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+#  Copyright 2019 Fivox
+#
+#  Licensed under the WTFPL, Version 2
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE 
+# TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION 
+# 0. You just DO WHAT THE FUCK YOU WANT TO.
+
+import binascii
+import os.path
+import subprocess
+import sys
+
+# Check if there is an input file
+if(len(sys.argv) < 2):
+    print('The input file is missing. You\'re not awesome enough to use this software.')
+    exit(0)
+
+# Check if input file exists
+if(not os.path.isfile(sys.argv[1])):
+    print(sys.argv[1] + ' does not exists. You\'re not awesome enough.')
+    exit(0)
+
+# Check if output file exists
+if(os.path.isfile(sys.argv[1][:-3])):
+    print(sys.argv[1][:-3] + ' already exists. Do you want to overwrite it (it will be awesome)? [y/N]')
+    answer = sys.stdin.readline()
+    if(answer != 'y\n' and answer != 'Y\n'):
+        print('You\'re not as awesome as you look.')
+        exit(0)
+
+# Open πzip file and read headers
+input_file = open(sys.argv[1], 'rb')
+if(input_file.read(3) != bytes('πz', 'UTF-8')):
+    print(sys.argv[1] + ' is corrupted. It is not awesome enough.')
+πsize = int.from_bytes(input_file.read(4), byteorder='big', signed=False)
+
+# Calculate
+input_byte_size = 1
+i = 1
+while(i < πsize):
+    input_byte_size = input_byte_size + 1
+    i = i * 256
+
+# Calculate π. I'm not very awesome, so I use bc
+π_str = subprocess.check_output('echo "obase=16;scale=' + str(πsize*2) + '; 4*a(1)" | bc -l | sed -e "s/^..//" | tr -d "\n" | tr -d "\\\\\\\\"', shell=True, executable='/bin/bash')
+
+π = [] # Binary value of π
+
+# Calculate binary value of π
+for i in range(0, len(π_str) - 1, 2):
+    π1 = π_str[i]
+    π1 = π1 - 48
+    if(π1 > 9):
+        π1 = π1 - 7
+
+    π2 = π_str[i + 1]
+    π2 = π2 - 48
+    if(π2 > 9):
+        π2 = π2 - 7
+
+    π.append((π2 + (16 * π1)).to_bytes(1, byteorder='big'));
+
+output_file = open(sys.argv[1][:-3], 'wb')
+
+while True:
+    input_position=int.from_bytes(input_file.read(input_byte_size), byteorder='big', signed=False)
+    input_size=int.from_bytes(input_file.read(input_byte_size), byteorder='big', signed=False)
+    # If you read this you are awesome
+    if(input_size == 0):
+        break
+
+    for i in range(input_position,input_position+input_size):
+        output_file.write(bytes(π[i]))
+
+input_file.close()
+output_file.close()
+
+os.remove(sys.argv[1])
+
+exit(0)
