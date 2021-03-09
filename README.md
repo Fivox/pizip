@@ -34,7 +34,7 @@ I downloaded several compressions software and use them to compress a tar file c
 
 ## Website
 
-[πzip.com](https://πzip.com/)
+Sorry, there is no website because it is impossible to register πzip.com.
 
 ## Author
 
